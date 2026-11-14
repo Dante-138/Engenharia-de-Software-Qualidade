@@ -17,6 +17,10 @@ Arquivos: [`tools/verificar-commits.ts`](../tools/verificar-commits.ts),
 4. O título do PR passa pela mesma regra: com squash merge, ele vira o commit da `main`.
 5. O PR aponta para a `main`. PR com destino em outro branch reprova (ver abaixo).
 
+Essas regras rodam no workflow `pr.yml` (check `Texto do PR`), que dispara também quando o
+PR é editado: título ou base trocados depois do check verde são conferidos de novo. O CI
+principal não roda em edição de PR, por isso o portão de texto fica num workflow à parte.
+
 Por que Conventional Commits: o histórico vira documentação legível, e o release-please
 (guia 9) monta a versão e o CHANGELOG a partir dele. `feat` sobe a versão menor, `fix` a de
 correção, `!` a maior.

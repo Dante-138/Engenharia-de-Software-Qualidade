@@ -1,0 +1,39 @@
+name: PR
+
+# Regras do texto e do destino do PR. Separado do CI porque precisa rodar também
+# quando o PR é editado: título, descrição ou base trocados depois do check
+# verde precisam ser conferidos de novo, e o CI não roda em "edited".
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # A proteção da main exige este check pelo nome (tools/configurar-repo.sh).
+  texto:
+    name: Texto do PR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # compara o branch com a main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # Texto do PR via env, nunca interpolado no script (injeção de comando).
+      - name: Destino do PR, mensagens de commit e título
+        env:
+          TITULO_PR: ${{ github.event.pull_request.title }}
+          DESTINO_DO_PR: ${{ github.base_ref }}
+          BASE: origin/${{ github.base_ref }}
+        run: node tools/verificar-commits.ts "$BASE"
