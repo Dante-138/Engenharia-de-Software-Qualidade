@@ -53,6 +53,7 @@ Serve de duas formas:
 11. [Briefs para agentes](guias/11-briefs-para-agentes.md)
 12. [Checklist de revisão](guias/12-checklist-de-revisao.md)
 13. [Lições reais](guias/13-licoes.md)
+14. [Stacks padrão](guias/15-stacks-padrao.md)
 
 ## Começar um projeto novo com o template
 
