@@ -46,10 +46,11 @@ texto que passou pela revisão e pelo portão.
 Em repositório público, mensagem de commit, título, descrição e comentário de PR e issue
 não levam nome de pessoa, e-mail, telefone, nome de empresa ou de cliente.
 
-Por que é rígido: o GitHub guarda a referência `refs/pull/N/head` de todo PR, inclusive
-fechado e com o branch apagado. Reescrever a `main` não apaga o texto nem os commits que
-passaram por um PR. Apagar de vez depende de pedido ao suporte do GitHub. O jeito barato é
-não publicar.
+Por que é rígido: todo PR ganha uma referência `refs/pull/N/head` no repositório, e esse
+espaço é só leitura. A documentação do GitHub diz que essas referências não podem ser
+reescritas por quem mantém o repositório e que só o suporte do GitHub remove dado sensível
+delas ([Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)).
+Reescrever a `main` não apaga o que passou por um PR. O jeito barato é não publicar.
 
 Como o portão ajuda sem expor a lista:
 
