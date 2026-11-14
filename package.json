@@ -18,9 +18,10 @@
     "test:navegador": "playwright test",
     "test:navegador:docker": "node tools/navegador-docker.mjs",
     "test:mutacao": "stryker run",
-    "lint:actions": "node tools/actionlint-docker.mjs",
+    "lint:actions": "node tools/auditar-workflows.mjs",
     "commits": "node tools/verificar-commits.ts origin/main",
-    "check": "npm run commits && npm run lint && npm run format:check && npm run typecheck && npm test && npm run build"
+    "versoes": "node tools/verificar-imagem-playwright.ts",
+    "check": "npm run commits && npm run versoes && npm run lint && npm run format:check && npm run typecheck && npm test && npm run build"
   },
   "engines": {
     "node": ">=22.18"
