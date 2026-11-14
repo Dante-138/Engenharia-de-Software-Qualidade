@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  ehDependabot,
   lerTermos,
   limparMensagemDoEditor,
   normalizar,
@@ -101,5 +102,37 @@ describe('texto que vai para o histórico', () => {
     const bruta =
       'feat: add x\n\nbody\n# comentário\n# ------------------------ >8 ------------------------\ndiff --git a b\n';
     expect(limparMensagemDoEditor(bruta)).toBe('feat: add x\n\nbody');
+  });
+});
+
+describe('exceção do Dependabot', () => {
+  const ROBO = 'dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>';
+  const ASSINATURA = 'Signed-off-by: dependabot[bot] <support@github.com>';
+  const mensagem = (...corpo: string[]) => ['build: bump the npm group with 2 updates', '', ...corpo].join('\n');
+
+  test('aceita a assinatura dele só em commit dele', () => {
+    expect(ehDependabot(ROBO)).toBe(true);
+    expect(problemasDaMensagem(mensagem('Bumps eslint.', '', ASSINATURA), [], ROBO)).toEqual([]);
+  });
+
+  test('a mesma linha vinda de uma pessoa, ou sem autor, reprova', () => {
+    expect(problemasDaMensagem(mensagem(ASSINATURA), [], 'Fulano <fulano@exemplo.com>')).toHaveLength(2);
+    expect(problemasDaMensagem(mensagem(ASSINATURA))).toHaveLength(2);
+  });
+
+  test('o nome do robô com outro e-mail não é o robô', () => {
+    expect(ehDependabot('dependabot[bot] <alguem@exemplo.com>')).toBe(false);
+    expect(problemasDaMensagem(mensagem(ASSINATURA), [], 'dependabot[bot] <alguem@exemplo.com>')).toHaveLength(2);
+  });
+
+  test.each([
+    'Co-authored-by: Alguém <a@b.cc>',
+    'Signed-off-by: Alguém <a@b.cc>',
+    'Generated with some tool',
+    `${ASSINATURA} e mais texto na mesma linha`,
+  ])('coautoria, assinatura de outra pessoa e "gerado por" reprovam também para ele: %j', (linha) => {
+    expect(problemasDaMensagem(mensagem(ASSINATURA, linha), [], ROBO)).toContain(
+      'contém linha de coautoria ou de "gerado por"',
+    );
   });
 });

@@ -67,6 +67,12 @@ deixe o CI pegar.
   público, print de PR só com dado de demonstração.
 - Chave de assinatura (de app, de firmware, de OTA) fica fora do repositório, com cópia de
   segurança: perder a chave obriga a reinstalar o app e perder dado.
+- **Código do PR não roda com secret.** Num PR, o workflow roda o código do próprio PR.
+  Se um passo recebe um secret e executa um script que o PR pode alterar, o PR pode mandar
+  o secret para fora. Por isso o `pr.yml`, que recebe o `TERMOS_PROIBIDOS`, roda o
+  verificador da `main` (`git show origin/main:tools/verificar-commits.ts`), já revisado.
+  A mudança no verificador vale nesse check depois do merge; antes disso, os testes de
+  unidade do Gate conferem a versão do PR.
 
 ## No próprio app (web)
 

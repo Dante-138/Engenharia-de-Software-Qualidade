@@ -61,6 +61,11 @@ Como o portão ajuda sem expor a lista:
   mascara cada termo no log e o aviso diz só o número do termo ("termo proibido nº 2"),
   porque o log de repositório público é público.
 
+Exceção única, estreita: o Dependabot assina os commits dele com uma linha
+`Signed-off-by: dependabot[bot] <...>`. Essa linha, sozinha e inteira, passa só quando o
+autor do commit, lido do `git log`, é o robô com o nome e o e-mail noreply dele. A mesma
+linha num commit de pessoa reprova, e coautoria ou "gerado por" reprovam também para ele.
+
 O portão não acha nome que não está na lista. A lista é a primeira linha de defesa; a
 segunda é a revisão (guia 12).
 

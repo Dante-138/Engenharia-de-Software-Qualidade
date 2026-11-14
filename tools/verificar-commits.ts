@@ -23,7 +23,8 @@
 // Regras:
 // 1. Assunto no padrão Conventional Commits: tipo(escopo opcional): descrição
 // 2. Assunto com no máximo 72 caracteres e sem ponto final
-// 3. Nenhuma linha de coautoria ou de "gerado por"
+// 3. Nenhuma linha de coautoria ou de "gerado por" (única exceção: a assinatura que
+//    o Dependabot põe nos commits dele, ver ASSINATURA_DO_DEPENDABOT)
 // 4. Nenhum endereço de e-mail e nenhum termo da lista proibida, sem diferenciar
 //    maiúscula, minúscula ou acento
 // 5. PR sempre com destino na main
@@ -42,6 +43,18 @@ const ASSUNTO = new RegExp(`^(${TIPOS.join('|')})(\\([a-z0-9-]+\\))?!?: \\S.*$`)
 // \u{1F916} é o emoji de robô que algumas ferramentas põem na assinatura.
 const AUTORIA_DE_TERCEIRO = /^\s*(co-authored-by:|signed-off-by:|generated (with|by)\b)|\u{1F916}/imu;
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/u;
+// Exceção única da regra 3: o Dependabot assina os commits dele com uma linha
+// "Signed-off-by" que ele mesmo escreve. Essa linha, sozinha e inteira, é aceita só
+// quando o autor do commit (lido do git) é o robô, com o nome e o e-mail noreply
+// dele. Coautoria, assinatura de outra pessoa e "gerado por" reprovam também para ele.
+const AUTOR_DEPENDABOT = /^dependabot\[bot\] <\d+\+dependabot\[bot\]@users\.noreply\.github\.com>$/;
+const ASSINATURA_DO_DEPENDABOT = /^Signed-off-by: dependabot\[bot\] <[^<>\n]*>[ \t]*$/gm;
+
+/** O autor ("Nome <e-mail>") é o Dependabot do GitHub? */
+export function ehDependabot(autor: string): boolean {
+  return AUTOR_DEPENDABOT.test(autor);
+}
+
 // Linha de corte que o git põe no editor com "commit -v": dali para baixo é diff.
 const CORTE = /^# -+ >8 -+$/m;
 
@@ -89,10 +102,14 @@ export function problemasDoAssunto(assunto: string): string[] {
   return problemas;
 }
 
-/** Problemas da mensagem inteira (assunto + corpo). */
-export function problemasDaMensagem(mensagem: string, termos: readonly string[] = []): string[] {
+/**
+ * Problemas da mensagem inteira (assunto + corpo). "autor" é quem fez o commit
+ * ("Nome <e-mail>"); só muda o resultado quando é o Dependabot.
+ */
+export function problemasDaMensagem(mensagem: string, termos: readonly string[] = [], autor = ''): string[] {
   const assunto = mensagem.split('\n', 1)[0] ?? '';
-  return [...problemasDoAssunto(assunto.trim()), ...problemasDoTexto(mensagem, termos)];
+  const texto = ehDependabot(autor) ? mensagem.replace(ASSINATURA_DO_DEPENDABOT, '') : mensagem;
+  return [...problemasDoAssunto(assunto.trim()), ...problemasDoTexto(texto, termos)];
 }
 
 /** Mensagem como o git grava: sem o diff do "commit -v" e sem as linhas de comentário. */
@@ -133,15 +150,15 @@ function existeNoGit(ref: string): boolean {
 function commitsDesde(base: string, termos: readonly string[]): Item[] {
   if (!existeNoGit('HEAD')) return []; // repositório sem nenhum commit ainda
   const intervalo = existeNoGit(base) ? `${base}..HEAD` : 'HEAD';
-  // %x00 separa os commits; %x01 separa o hash da mensagem.
-  const saida = git(['log', '--no-merges', '--format=%h%x01%B%x00', intervalo]);
+  // %x00 separa os commits; %x01 separa hash, autor e mensagem.
+  const saida = git(['log', '--no-merges', '--format=%h%x01%an <%ae>%x01%B%x00', intervalo]);
   return saida
     .split('\0')
     .map((bloco) => bloco.trim())
     .filter(Boolean)
     .map((bloco) => {
-      const [hash = '', mensagem = ''] = bloco.split('\x01');
-      return { rotulo: `commit ${hash}`, problemas: problemasDaMensagem(mensagem.trim(), termos) };
+      const [hash = '', autor = '', mensagem = ''] = bloco.split('\x01');
+      return { rotulo: `commit ${hash}`, problemas: problemasDaMensagem(mensagem.trim(), termos, autor) };
     });
 }
 
