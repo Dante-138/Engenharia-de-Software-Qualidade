@@ -38,9 +38,10 @@ build. Ninguém edita versão nem CHANGELOG à mão.
 
 ### O token de release
 
-PR aberto com o `GITHUB_TOKEN` padrão não dispara outros workflows (regra do GitHub para
-evitar laço). Resultado: o PR de release nunca recebe os checks exigidos e fica travado na
-proteção da `main`.
+Com o `GITHUB_TOKEN` padrão, o GitHub evita laço de workflow: o CI do PR que ele abre fica
+parado esperando alguém aprovar a execução à mão ("Approve workflows to run"), e a tag e a
+release que ele cria não disparam workflow nenhum. Na prática, todo PR de release viraria
+um clique manual, e nada que dependa da tag rodaria.
 
 Solução: um token fino (fine-grained) só para este repositório, guardado como secret
 `RELEASE_TOKEN`:
@@ -54,6 +55,15 @@ Solução: um token fino (fine-grained) só para este repositório, guardado com
 
 Sem o secret, o workflow só registra um aviso e termina verde: o projeto funciona, só sem
 release automática.
+
+## Atestação de proveniência
+
+O pacote da release sai com uma atestação assinada de que veio deste workflow e deste
+commit (guia 8, seção SLSA). Conferir antes de usar um pacote baixado:
+
+```bash
+gh attestation verify app-v1.2.3.tar.gz --repo dono/repositorio
+```
 
 ## Firmware
 

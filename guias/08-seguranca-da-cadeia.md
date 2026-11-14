@@ -48,15 +48,44 @@ deixe o CI pegar.
 ## Actions e imagens
 
 - **Actions por hash de commit**, com a versão em comentário (guia 2).
-- **Imagens Docker por digest** quando a versão não é controlada por outro arquivo:
-  `gcc:14@sha256:...` na receita de C, `rhysd/actionlint:1.7.12@sha256:...` no lint dos
-  workflows. A exceção é o container do Playwright, que segue a versão do pacote no
-  lockfile.
+- **Imagens Docker por digest**, sempre: `gcc:14@sha256:...`, `rhysd/actionlint:...@sha256:...`,
+  `ghcr.io/zizmorcore/zizmor:...@sha256:...` e o container do Playwright. A tag de uma
+  imagem pode passar a apontar para outro conteúdo; o digest não.
+- **Imagem e pacote na mesma versão.** O Playwright do container precisa bater com o
+  `@playwright/test` do lockfile. Como o Dependabot atualiza o pacote e não a imagem, o
+  `npm run versoes` (`tools/verificar-imagem-playwright.ts`) reprova o descompasso e diz
+  como corrigir.
 - **actionlint** confere sintaxe, expressões e permissões dos workflows, e roda o
   shellcheck nos blocos `run`. Workflow errado costuma falhar só no momento em que é
   disparado; o actionlint pega antes.
+- **zizmor** audita a segurança dos workflows: injeção de template (`${{ }}` com texto de
+  PR dentro de um `run`), permissões demais, action ou imagem sem hash, credencial que fica
+  no `.git/config`, envenenamento de cache, gatilhos perigosos (`pull_request_target`,
+  `workflow_run`). Caso real deste repositório: na primeira execução ele achou a imagem do
+  Playwright fixada só por tag e o cache do npm ligado no workflow de release, onde um
+  cache escrito por um PR poderia entrar no pacote publicado. Os dois rodam pelo
+  `npm run lint:actions` (`tools/auditar-workflows.mjs`), no PC e no Gate.
+- **OpenSSF Scorecard** (`scorecard.yml`) dá uma nota de 0 a 10 a 20 práticas do
+  repositório (proteção de branch, actions fixadas, permissões do token, revisão, SAST,
+  ferramenta de atualização de dependência, releases assinadas) e publica os achados na
+  aba Security. Serve de auditoria externa: o que o portão esqueceu, ele aponta.
 - **CodeQL** analisa o código, os workflows e o C (`codeql.yml`), no PR, na `main` e toda
-  segunda, para pegar regra nova mesmo sem commit.
+  segunda, para pegar regra nova mesmo sem commit. Usa a suíte `security-and-quality`
+  (segurança mais manutenibilidade), a mais ampla das três.
+
+## Proveniência do que é publicado (SLSA)
+
+O pacote anexado à release sai com uma **atestação de proveniência**: um documento
+assinado pelo GitHub dizendo de qual repositório, workflow e commit aquele arquivo saiu
+(`actions/attest` no `release.yml`). Quem baixa confere com:
+
+```bash
+gh attestation verify app-v1.2.3.tar.gz --repo dono/repositorio
+```
+
+No modelo SLSA, isso cobre o nível 2 do Build track (build hospedado, proveniência
+gerada e assinada pela plataforma): forjar exige atacar a plataforma, não só editar um
+arquivo. Grátis em repositório público.
 
 ## Segredos
 
