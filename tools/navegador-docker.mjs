@@ -6,9 +6,9 @@
 //   npm run test:navegador:docker                          confere
 //   npm run test:navegador:docker -- --update-snapshots    regrava as referências
 //
-// A imagem segue a versão do @playwright/test instalada, então atualizar o
-// Playwright atualiza o container junto. node_modules fica num volume do
-// Docker (os binários do Linux não podem misturar com os do Windows).
+// A imagem é a mesma do CI, lida do .github/workflows/ci.yml (fonte única,
+// fixada por digest). node_modules fica num volume do Docker (os binários do
+// Linux não podem misturar com os do Windows).
 // Precisa do Docker Desktop aberto.
 
 import { spawnSync } from 'node:child_process';
@@ -17,11 +17,9 @@ import { fileURLToPath } from 'node:url';
 
 const raiz = fileURLToPath(new URL('..', import.meta.url));
 const pacote = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-const versao = JSON.parse(
-  readFileSync(new URL('../node_modules/@playwright/test/package.json', import.meta.url), 'utf8'),
-).version;
-
-const imagem = `mcr.microsoft.com/playwright:v${versao}-noble`;
+const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const imagem = /mcr\.microsoft\.com\/playwright:v[\d.]+-noble@sha256:[0-9a-f]{64}/.exec(workflow)?.[0];
+if (!imagem) throw new Error('Imagem do Playwright não encontrada no ci.yml');
 const volume = `${pacote.name}-node-modules`;
 const argumentos = process.argv
   .slice(2)

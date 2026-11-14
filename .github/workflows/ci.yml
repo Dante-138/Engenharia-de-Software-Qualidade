@@ -27,8 +27,6 @@ jobs:
     name: Gate
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    outputs:
-      playwright: ${{ steps.versoes.outputs.playwright }}
     steps:
       # Actions fixadas pelo hash do commit, não por tag (tag pode ser reapontada).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,8 +49,11 @@ jobs:
         with:
           fail-on-severity: low
 
-      - name: Workflows (actionlint)
+      - name: Workflows (actionlint e zizmor)
         run: npm run lint:actions
+
+      - name: Imagem do Playwright fixada e na versão do pacote
+        run: npm run versoes
 
       - name: Lint (zero avisos, sem rotas de fuga)
         run: npm run lint
@@ -77,20 +78,17 @@ jobs:
           path: dist/
           retention-days: 14
 
-      - name: Versão do Playwright
-        id: versoes
-        run: echo "playwright=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-
   # Testes no Chrome, contra o build: fluxo, console limpo, acessibilidade e
-  # regressão visual. O container é o oficial do Playwright na mesma versão do
-  # pacote, então atualizar o Playwright atualiza o navegador junto.
+  # regressão visual. O container é o oficial do Playwright, fixado por digest e
+  # na mesma versão do pacote (o Gate confere com tools/verificar-imagem-playwright.ts).
+  # Esta linha é a fonte única da imagem: o tools/navegador-docker.mjs lê daqui.
   navegador:
     name: Navegador
     needs: gate
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     container:
-      image: mcr.microsoft.com/playwright:v${{ needs.gate.outputs.playwright }}-noble
+      image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
       options: --ipc=host
     env:
       NAVEGADOR_CONTAINER: '1'
