@@ -4,13 +4,14 @@ Arquivo: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## Estrutura
 
-Três jobs, todos exigidos pela proteção da `main`:
+Três jobs no `ci.yml`, todos exigidos pela proteção da `main` (o quarto check exigido é o
+`Texto do PR`, do `pr.yml`):
 
-| Job         | Roda                                                                                   |
-| ----------- | -------------------------------------------------------------------------------------- |
-| `Gate`      | commits, dependency review, actionlint, lint, formato, tipos, unidade, build, artefato |
-| `Navegador` | Playwright no container oficial: fluxo, console, axe, regressão visual                 |
-| `Mutacao`   | Stryker no núcleo                                                                      |
+| Job         | Roda                                                                          |
+| ----------- | ----------------------------------------------------------------------------- |
+| `Gate`      | dependency review, actionlint, lint, formato, tipos, unidade, build, artefato |
+| `Navegador` | Playwright no container oficial: fluxo, console, axe, regressão visual        |
+| `Mutacao`   | Stryker no núcleo                                                             |
 
 `Navegador` e `Mutacao` dependem do `Gate` (`needs: gate`): se o básico falhou, não gasta
 minuto com o resto.
@@ -33,15 +34,15 @@ Um script comprometido no CI não consegue empurrar código com o token.
 ele estiver fora de sincronia). `--ignore-scripts` impede que qualquer dependência rode
 código na instalação, que é o vetor mais comum de pacote malicioso.
 
-**`fetch-depth: 0` no Gate.** O portão de commits compara o branch com a `main` e precisa
-do histórico.
+**`fetch-depth: 0` no `pr.yml`.** O portão de commits compara o branch com a `main` e
+precisa do histórico.
 
 **`concurrency` com `cancel-in-progress`.** Push novo no mesmo PR cancela a execução
 anterior. Economiza minuto e evita resultado velho.
 
 **`timeout-minutes` em todo job.** Teste travado não fica 6 horas consumindo minuto.
 
-**Nome do job é contrato.** A proteção da `main` exige os checks pelo nome (`Gate`,
+**Nome do job é contrato.** A proteção da `main` exige os checks pelo nome (`Texto do PR`, `Gate`,
 `Navegador`, `Mutacao`). Renomear o job sem atualizar a proteção deixa todo PR esperando
 um check que nunca vai chegar. O script `tools/configurar-repo.sh` tem a lista.
 
@@ -63,6 +64,7 @@ Na regressão visual, o relatório traz a imagem nova e a diferença.
 
 | Arquivo         | Para quê                                                                                |
 | --------------- | --------------------------------------------------------------------------------------- |
+| `pr.yml`        | texto e destino do PR, também quando o PR é editado (check `Texto do PR`, exigido)      |
 | `codeql.yml`    | análise de segurança (JS/TS, os próprios workflows e C) no PR, na `main` e toda segunda |
 | `release.yml`   | versão, CHANGELOG, tag e release automáticos (guia 9)                                   |
 | `receita-c.yml` | testes de C com sanitizers, só quando a receita muda                                    |
