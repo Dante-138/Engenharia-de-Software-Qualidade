@@ -31,9 +31,12 @@ jobs:
           node-version: 24
 
       # Texto do PR via env, nunca interpolado no script (injeção de comando).
-      - name: Destino do PR, mensagens de commit e título
+      # TERMOS_PROIBIDOS vem de um secret: a lista de nomes não pode ficar pública.
+      - name: Destino do PR, mensagens de commit, título e descrição
         env:
           TITULO_PR: ${{ github.event.pull_request.title }}
+          CORPO_PR: ${{ github.event.pull_request.body }}
           DESTINO_DO_PR: ${{ github.base_ref }}
+          TERMOS_PROIBIDOS: ${{ secrets.TERMOS_PROIBIDOS }}
           BASE: origin/${{ github.base_ref }}
         run: node tools/verificar-commits.ts "$BASE"

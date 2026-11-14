@@ -1,10 +1,13 @@
 # 6. Commits e pull requests
 
 Arquivos: [`tools/verificar-commits.ts`](../tools/verificar-commits.ts),
-[`.githooks/pre-push`](../.githooks/pre-push),
+[`.githooks/commit-msg`](../.githooks/commit-msg), [`.githooks/pre-push`](../.githooks/pre-push),
 [`.github/pull_request_template.md`](../.github/pull_request_template.md).
 
-## Regras do portão de commits
+## Regras do portão de texto
+
+Tudo o que vai para o histórico passa pelo mesmo portão: mensagem de commit, título,
+descrição e destino do PR.
 
 1. Assunto em Conventional Commits: `tipo(escopo opcional): descrição`, com os tipos
    `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`,
@@ -14,8 +17,10 @@ Arquivos: [`tools/verificar-commits.ts`](../tools/verificar-commits.ts),
 3. Nenhuma linha `Co-Authored-By`, `Signed-off-by` ou "Generated with/by", nem o emoji de
    robô que algumas ferramentas põem na assinatura. A autoria do repositório é de quem é
    dono dele.
-4. O título do PR passa pela mesma regra: com squash merge, ele vira o commit da `main`.
-5. O PR aponta para a `main`. PR com destino em outro branch reprova (ver abaixo).
+4. Nenhum endereço de e-mail e nenhum termo da lista proibida (nome de pessoa, de empresa,
+   de cliente), sem diferenciar maiúscula, minúscula ou acento.
+5. O título do PR passa pelas regras 1 a 4; a descrição, pelas regras 3 e 4.
+6. O PR aponta para a `main` (ver "Nunca empilhar PR").
 
 Essas regras rodam no workflow `pr.yml` (check `Texto do PR`), que dispara também quando o
 PR é editado: título ou base trocados depois do check verde são conferidos de novo. O CI
@@ -24,6 +29,39 @@ principal não roda em edição de PR, por isso o portão de texto fica num work
 Por que Conventional Commits: o histórico vira documentação legível, e o release-please
 (guia 9) monta a versão e o CHANGELOG a partir dele. `feat` sobe a versão menor, `fix` a de
 correção, `!` a maior.
+
+## A descrição do PR também vai para a main
+
+O repositório mescla por squash com **título e descrição do PR** como mensagem
+(`squash_merge_commit_message=PR_BODY` no `configurar-repo.sh`), e não com a lista de
+commits do branch.
+
+Caso real: com a opção padrão (lista de commits), um texto de commit intermediário, que
+ninguém tinha revisado porque o PR foi revisado pelo diff e pela descrição, entrou na
+`main`. Com a descrição do PR como mensagem, o que vai para o histórico é exatamente o
+texto que passou pela revisão e pelo portão.
+
+## Nada pessoal em texto público
+
+Em repositório público, mensagem de commit, título, descrição e comentário de PR e issue
+não levam nome de pessoa, e-mail, telefone, nome de empresa ou de cliente.
+
+Por que é rígido: o GitHub guarda a referência `refs/pull/N/head` de todo PR, inclusive
+fechado e com o branch apagado. Reescrever a `main` não apaga o texto nem os commits que
+passaram por um PR. Apagar de vez depende de pedido ao suporte do GitHub. O jeito barato é
+não publicar.
+
+Como o portão ajuda sem expor a lista:
+
+- **No PC:** um arquivo fora do repositório,
+  `~/.config/portao-de-qualidade/termos-proibidos.txt`, um termo por linha (`#` comenta).
+  O hook `commit-msg` reprova o commit antes de ele existir.
+- **No CI:** o secret `TERMOS_PROIBIDOS` do repositório, com a mesma lista. O portão
+  mascara cada termo no log e o aviso diz só o número do termo ("termo proibido nº 2"),
+  porque o log de repositório público é público.
+
+O portão não acha nome que não está na lista. A lista é a primeira linha de defesa; a
+segunda é a revisão (guia 12).
 
 ## Um PR pequeno por mudança
 
@@ -49,18 +87,29 @@ deles chegou à `main` sem ter passado pela proteção como PR próprio. Desde e
 O check vermelho é um aviso forte, não uma trava: num branch sem proteção, o GitHub ainda
 deixa mesclar. A trava de verdade é a regra de quem dá o merge (guia 10).
 
+## Atualizar o branch de um PR
+
+Quando a `main` anda e o PR fica desatualizado, o botão "Update branch" do GitHub oferece
+merge ou rebase. Se um agente também trabalha naquele branch, use **merge**. O rebase pela
+web reescreve os commits do branch remoto; o agente, com a cópia antiga, empurra por cima
+ou fica com um histórico que não bate mais com o remoto. O merge só acrescenta um commit, e
+o squash final apaga esse commit do histórico da `main` de qualquer forma.
+
 ## O portão também roda no PC
 
-O `npm run check` começa pelo portão de commits (`npm run commits`, contra `origin/main`),
-e o hook `pre-push` roda o `npm run check` antes de cada push. O hook é ativado pelo
-`npm install` (script `prepare`, que aponta o `core.hooksPath` para `.githooks`).
+- `commit-msg`: confere a mensagem antes de o commit existir.
+- `pre-push`: roda o `npm run check`, que começa pelo portão de commits do branch inteiro
+  (`npm run commits`, contra `origin/main`).
+
+Os dois são ativados pelo `npm install` (script `prepare`, que aponta o `core.hooksPath`
+para `.githooks`).
 
 Caso real que motivou isso: um assunto de commit com 74 caracteres passou na verificação
 local, que na época não conferia commits, e só reprovou no CI. Com force push bloqueado,
 corrigir o assunto custou fechar os PRs e abrir de novo. Erro que o portão pega, o PC tem
 que pegar antes do push.
 
-Pular o hook (`git push --no-verify`) só em emergência: o CI confere tudo de novo.
+Pular os hooks (`--no-verify`) só em emergência: o CI confere tudo de novo.
 
 ## Mensagens: como escrever
 
