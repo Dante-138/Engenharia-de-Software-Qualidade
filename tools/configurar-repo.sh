@@ -6,7 +6,8 @@
 # Uso: bash tools/configurar-repo.sh dono/repositorio
 #
 # O que faz (tudo idempotente, pode rodar de novo):
-#   1. Merge só por squash, com o título do PR como mensagem; apaga o branch depois.
+#   1. Merge só por squash, com título e descrição do PR como mensagem (o texto
+#      revisado, não a lista de commits do branch); apaga o branch depois.
 #   2. Token dos workflows só leitura por padrão; Actions não aprova PR.
 #   3. Secret scanning com push protection, alertas e correções do Dependabot.
 #   4. Protege a main: PR obrigatório, checks Texto do PR, Gate, Navegador e Mutacao verdes,

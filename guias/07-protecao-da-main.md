@@ -13,7 +13,7 @@ Script: [`tools/configurar-repo.sh`](../tools/configurar-repo.sh).
 | Conversas resolvidas                                           | comentário de revisão não fica para trás                   |
 | Sem force push e sem apagar a `main`                           | o histórico publicado não muda                             |
 | Vale para administradores                                      | o dono não tem atalho; o atalho é o que quebra numa pressa |
-| Merge só por squash, com o título do PR                        | um commit por PR, com mensagem que passou no portão        |
+| Merge só por squash, com título e descrição do PR              | um commit por PR, com o texto que passou na revisão        |
 | Branch apagado depois do merge                                 | não sobra branch velho para alguém empilhar em cima        |
 | Token dos workflows só leitura, Actions não aprova PR          | workflow comprometido não altera o repositório             |
 

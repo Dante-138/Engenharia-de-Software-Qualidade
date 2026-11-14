@@ -31,9 +31,18 @@ jobs:
           node-version: 24
 
       # Texto do PR via env, nunca interpolado no script (injeção de comando).
-      - name: Destino do PR, mensagens de commit e título
+      # TERMOS_PROIBIDOS vem de um secret: a lista de nomes não pode ficar pública.
+      # Por isso o verificador que roda aqui é o da main, já revisado, e não o do
+      # PR: um PR que alterasse o script poderia mandar o secret para fora. Mudança
+      # no verificador vale neste check depois do merge; antes disso, os testes de
+      # unidade do Gate conferem a versão do PR.
+      - name: Destino do PR, mensagens de commit, título e descrição
         env:
           TITULO_PR: ${{ github.event.pull_request.title }}
+          CORPO_PR: ${{ github.event.pull_request.body }}
           DESTINO_DO_PR: ${{ github.base_ref }}
+          TERMOS_PROIBIDOS: ${{ secrets.TERMOS_PROIBIDOS }}
           BASE: origin/${{ github.base_ref }}
-        run: node tools/verificar-commits.ts "$BASE"
+        run: |
+          git show origin/main:tools/verificar-commits.ts > "$RUNNER_TEMP/verificar-commits.ts"
+          node "$RUNNER_TEMP/verificar-commits.ts" "$BASE"
