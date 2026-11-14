@@ -1,0 +1,45 @@
+name: Receita C
+
+# Testes de C com sanitizers (receitas/c-sanitizers). Num projeto que não usa C,
+# apague este arquivo junto com a pasta da receita.
+on:
+  push:
+    branches: [main]
+    paths: ['receitas/c-sanitizers/**', '.github/workflows/receita-c.yml']
+  pull_request:
+    paths: ['receitas/c-sanitizers/**', '.github/workflows/receita-c.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: receita-c-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitizers:
+    name: C com sanitizers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # O mesmo compilador no CI e no PC: imagem fixada pelo digest.
+    container:
+      image: gcc:14@sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765
+    defaults:
+      run:
+        working-directory: receitas/c-sanitizers
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Testes com ASan e UBSan
+        run: make teste
+
+      - name: Prova de que o sanitizer está ligado
+        run: make prova
+
+      - name: Instalar o cppcheck
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends cppcheck
+
+      - name: Análise estática (cppcheck)
+        run: make analise
