@@ -1,0 +1,10 @@
+{
+  // Só o núcleo, sem as definições do navegador nem do Node: usar document,
+  // window, localStorage ou process aqui dentro vira erro de compilação.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "types": []
+  },
+  "include": ["src/nucleo"]
+}
