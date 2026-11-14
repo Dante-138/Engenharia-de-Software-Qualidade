@@ -87,6 +87,13 @@ No modelo SLSA, isso cobre o nível 2 do Build track (build hospedado, proveniê
 gerada e assinada pela plataforma): forjar exige atacar a plataforma, não só editar um
 arquivo. Grátis em repositório público.
 
+Diferença para o nível 3: no `release.yml`, o `id-token: write` vale para o job inteiro, e o
+`npm run build` roda nesse mesmo job. Um passo de build comprometido poderia pedir o
+token de assinatura. O nível 3 exige que o build não alcance o segredo de assinatura. O
+próximo passo é separar o build (`contents: read`) do job que atesta e anexa, passando o
+pacote entre os dois como artefato. Não foi feito ainda: o custo é um job a mais e o
+ganho só importa quando o pacote tiver quem dependa dele.
+
 ## Segredos
 
 - **Secret scanning com push protection:** o GitHub recusa o push que contém chave de API,

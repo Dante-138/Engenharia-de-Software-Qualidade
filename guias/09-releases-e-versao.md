@@ -41,7 +41,11 @@ build. Ninguém edita versão nem CHANGELOG à mão.
 Com o `GITHUB_TOKEN` padrão, o GitHub evita laço de workflow: o CI do PR que ele abre fica
 parado esperando alguém aprovar a execução à mão ("Approve workflows to run"), e a tag e a
 release que ele cria não disparam workflow nenhum. Na prática, todo PR de release viraria
-um clique manual, e nada que dependa da tag rodaria.
+um clique manual, e nada que dependa da tag rodaria. Fonte: seção "Triggering a workflow
+from a workflow" em
+<https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow>
+(conferida em 14/11/2026). A exceção do PR com execução aguardando aprovação está nessa
+página; não foi observada neste repositório, que ainda não tem o `RELEASE_TOKEN`.
 
 Solução: um token fino (fine-grained) só para este repositório, guardado como secret
 `RELEASE_TOKEN`:
