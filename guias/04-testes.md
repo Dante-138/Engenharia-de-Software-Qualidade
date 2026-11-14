@@ -98,7 +98,12 @@ no Windows nunca bate com o Linux do CI. Por isso:
 - o teste visual (marcado `@visual`) só roda dentro do container oficial do Playwright, no
   CI e no PC (`npm run test:navegador:docker`);
 - fora do container ele é pulado, e o resto dos testes de navegador roda normal;
-- partes que mudam sozinhas ficam mascaradas (o exemplo mascara a versão e o commit).
+- partes que mudam sozinhas ficam mascaradas (o exemplo mascara o rodapé com a versão e o
+  commit). A máscara precisa ter tamanho fixo: ela pinta o retângulo do elemento, e um
+  elemento que cresce com o texto muda a imagem do mesmo jeito. Caso real: a referência
+  gerada antes do primeiro commit mostrava "local" (5 caracteres), o CI mostrava o hash (7),
+  e 510 pixels de máscara a mais reprovaram o teste. Mascarar o rodapé inteiro, que tem
+  largura fixa, resolveu.
 
 Mudou o visual de propósito? Regrave a referência no container e confira a imagem no PR:
 

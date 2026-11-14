@@ -67,6 +67,16 @@ acusou duas falhas moderadas em dependências indiretas.
 **Regra que ficou:** `npm audit` e `dependency-review` desde o primeiro PR; `overrides` para
 forçar a versão corrigida da indireta, com teste. (Guia 8.)
 
+## A máscara que mudava de tamanho
+
+**O que aconteceu:** a regressão visual mascarava o texto da versão. A referência foi
+gerada quando o repositório ainda não tinha commit (versão "local"); no CI, o texto era o
+hash do commit, mais largo. O retângulo da máscara cresceu junto e o teste reprovou com
+510 pixels diferentes, no mesmo container e com a mesma tela.
+
+**Regra que ficou:** máscara de regressão visual cobre um elemento de tamanho fixo (o
+contêiner do texto variável, não o texto). (Guia 4.)
+
 ## A CSP pegou um script injetado
 
 **O que aconteceu:** ao provar que a fixture do navegador funcionava, um teste que injetava

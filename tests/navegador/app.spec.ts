@@ -33,7 +33,9 @@ test('não tem violação de acessibilidade (axe)', async ({ page }) => {
 test('aparência da tela principal @visual', async ({ page }) => {
   await page.getByLabel('Prazo').fill('2026-11-20');
   await expect(page).toHaveScreenshot('tela-principal.png', {
-    // A versão muda a cada commit; fica fora da comparação.
-    mask: [page.locator('#versao')],
+    // A versão muda a cada commit e fica fora da comparação. A máscara cobre o
+    // rodapé inteiro, que tem largura fixa: mascarar só o texto da versão muda o
+    // tamanho do retângulo junto com o texto, e a imagem deixa de bater.
+    mask: [page.locator('footer')],
   });
 });
