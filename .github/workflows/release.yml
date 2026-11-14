@@ -1,0 +1,70 @@
+name: Release
+
+# A cada merge na main, o release-please lê os commits (Conventional Commits) e
+# mantém um PR "chore: release x.y.z" com a versão nova e o CHANGELOG. Quando
+# esse PR é mesclado, ele cria a tag e a release, e este workflow anexa o build.
+#
+# Precisa do secret RELEASE_TOKEN (token fino, só deste repositório, com
+# Contents e Pull requests em leitura e escrita). Com o GITHUB_TOKEN padrão o PR
+# de release não dispara o CI e fica travado na proteção da main.
+# Sem o secret, o workflow só avisa e termina verde.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Conferir o token de release
+        id: token
+        env:
+          TEM_TOKEN: ${{ secrets.RELEASE_TOKEN != '' }}
+        run: |
+          echo "existe=$TEM_TOKEN" >> "$GITHUB_OUTPUT"
+          if [ "$TEM_TOKEN" != "true" ]; then
+            echo "::notice::Secret RELEASE_TOKEN ausente: release automática desligada (ver guias/09-releases-e-versao.md)."
+          fi
+
+      - name: Atualizar o PR de release ou publicar a release
+        id: release
+        if: steps.token.outputs.existe == 'true'
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.release.outputs.release_created == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.release.outputs.release_created == 'true'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Anexar o build à release
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          tar -czf "app-$TAG.tar.gz" -C dist .
+          gh release upload "$TAG" "app-$TAG.tar.gz"

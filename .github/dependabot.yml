@@ -1,0 +1,39 @@
+# Dependabot: PRs semanais de atualização. Tudo agrupado num PR por ecossistema,
+# o que mantém o título curto (o portão de commits aceita até 72 caracteres) e
+# passa as atualizações pelo CI de uma vez.
+#
+# cooldown: só propõe versão publicada há pelo menos 7 dias. Pacote comprometido
+# costuma ser descoberto e retirado nos primeiros dias.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      npm:
+        applies-to: version-updates
+        patterns: ['*']
+      npm-seguranca:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']

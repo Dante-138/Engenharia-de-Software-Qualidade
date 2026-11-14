@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# O token do workflow só lê o repositório. Job que precisa de mais pede no próprio job.
+permissions:
+  contents: read
+
+# Push novo no mesmo PR cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Commit gravado no app: o do PR (não o merge temporário que o GitHub monta).
+  COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  # A proteção da main exige Gate, Navegador e Mutacao verdes para liberar o
+  # merge. Trocar o "name" de um job exige atualizar a proteção
+  # (tools/configurar-repo.sh), senão o PR fica esperando um check que não existe.
+  gate:
+    name: Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      playwright: ${{ steps.versoes.outputs.playwright }}
+    steps:
+      # Actions fixadas pelo hash do commit, não por tag (tag pode ser reapontada).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # o portão de commits compara com a branch de destino
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # --ignore-scripts: nenhuma dependência roda código na instalação.
+      - name: Instalar dependências
+        run: npm ci --ignore-scripts
+
+      - name: Destino do PR, mensagens de commit e título
+        if: github.event_name == 'pull_request'
+        env:
+          TITULO_PR: ${{ github.event.pull_request.title }}
+          DESTINO_DO_PR: ${{ github.base_ref }}
+          BASE: origin/${{ github.base_ref }}
+        run: node tools/verificar-commits.ts "$BASE"
+
+      # Reprova o PR que adiciona dependência com vulnerabilidade conhecida.
+      - name: Dependências novas (dependency review)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+
+      - name: Workflows (actionlint)
+        run: npm run lint:actions
+
+      - name: Lint (zero avisos, sem rotas de fuga)
+        run: npm run lint
+
+      - name: Formatação
+        run: npm run format:check
+
+      - name: Tipos (TypeScript estrito)
+        run: npm run typecheck
+
+      - name: Testes de unidade (100% de cobertura do núcleo)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Artefato por PR: o build exato que foi testado, para baixar e abrir.
+      - name: Guardar o build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: build-${{ env.COMMIT }}
+          path: dist/
+          retention-days: 14
+
+      - name: Versão do Playwright
+        id: versoes
+        run: echo "playwright=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+  # Testes no Chrome, contra o build: fluxo, console limpo, acessibilidade e
+  # regressão visual. O container é o oficial do Playwright na mesma versão do
+  # pacote, então atualizar o Playwright atualiza o navegador junto.
+  navegador:
+    name: Navegador
+    needs: gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.gate.outputs.playwright }}-noble
+      options: --ipc=host
+    env:
+      NAVEGADOR_CONTAINER: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar dependências
+        run: npm ci --ignore-scripts
+
+      - name: Testes de navegador
+        run: npx playwright test
+
+      # Na falha, o relatório traz a imagem nova e a diferença: é dali que sai a
+      # referência atualizada quando a mudança visual é intencional.
+      - name: Guardar o relatório
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-navegador-${{ env.COMMIT }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  # Teste de mutação do núcleo: confere se os testes realmente pegam erro.
+  mutacao:
+    name: Mutacao
+    needs: gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci --ignore-scripts
+
+      - name: Teste de mutação (Stryker)
+        run: npm run test:mutacao
+
+      - name: Guardar o relatório
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-mutacao-${{ env.COMMIT }}
+          path: reports/mutacao/
+          retention-days: 14
