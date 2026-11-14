@@ -14,9 +14,15 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    # Sem "include: scope": o "(deps-dev)" deixava o título com 73 caracteres e o
+    # portão de commits (máximo 72) reprovava o PR do próprio Dependabot.
     commit-message:
       prefix: build
-      include: scope
+    # Os tipos do Node acompanham a versão maior do Node que o projeto roda (24).
+    # Subir a versão maior dos tipos é decisão junto com a do Node, não automática.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       npm:
         applies-to: version-updates

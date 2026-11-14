@@ -84,3 +84,13 @@ um `<script>` na página reprovou com a mensagem do Trusted Types bloqueando a a
 
 **Regra que ficou:** testes de navegador contra o build com a CSP ligada, reprovando
 qualquer erro de console. (Guias 4 e 8.)
+
+## O Dependabot reprovado pelo próprio portão
+
+**O que aconteceu:** no primeiro dia, o Dependabot abriu um PR com o título
+`build(deps-dev): bump @types/node ... in the npm group`, com 73 caracteres, e o Gate
+reprovou. Além disso, ele propunha os tipos do Node 26 para um projeto que roda no Node 24.
+
+**Regra que ficou:** prefixo do Dependabot sem escopo (o título cai para 63 caracteres) e
+`@types/node` preso à versão maior do Node do projeto. O portão não ganhou exceção para
+robô: a configuração do robô é que se ajustou ao portão. (Guia 8.)
