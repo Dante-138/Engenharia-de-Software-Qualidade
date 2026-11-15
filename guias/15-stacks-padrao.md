@@ -61,7 +61,7 @@ nomes dos checks exigidos (guia 7), e copiar um `AGENTS.md` com as regras do rep
    testes de host: flags de aviso, sanitizers, alvos `teste`, `prova` e `analise`.
 3. Copie o job de [`receita-c.yml`](../.github/workflows/receita-c.yml), ajustando a
    pasta.
-4. Módulos de C já prontos e testados (fila, e o que mais houver) ficam no repositório
+4. Módulos de C já prontos e testados (frame de protocolo, e o que mais houver) ficam no repositório
    [`lib-embedded-c-ci`](https://github.com/Dante-138/lib-embedded-c-ci): copie de lá
    antes de escrever de novo.
 5. O build do alvo real (Zephyr ou ESP-IDF) roda no container do SDK, no mesmo CI.
