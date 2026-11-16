@@ -54,6 +54,7 @@ Serve de duas formas:
 12. [Checklist de revisão](guias/12-checklist-de-revisao.md)
 13. [Lições reais](guias/13-licoes.md)
 14. [Stacks padrão](guias/15-stacks-padrao.md)
+15. [Qualidade na prática](guias/16-qualidade-na-pratica.md)
 
 ## Começar um projeto novo com o template
 
