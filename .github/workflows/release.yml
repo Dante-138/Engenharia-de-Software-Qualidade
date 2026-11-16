@@ -2,12 +2,14 @@ name: Release
 
 # A cada merge na main, o release-please lê os commits (Conventional Commits) e
 # mantém um PR "chore: release x.y.z" com a versão nova e o CHANGELOG. Quando
-# esse PR é mesclado, ele cria a tag e a release, e este workflow anexa o build.
+# esse PR é mesclado, ele cria a tag e a release, e este workflow anexa o build
+# com uma atestação de proveniência (SLSA): prova assinada de que aquele arquivo
+# saiu deste workflow, deste commit. Conferir: gh attestation verify <arquivo> --repo <dono/repo>
 #
 # Precisa do secret RELEASE_TOKEN (token fino, só deste repositório, com
-# Contents e Pull requests em leitura e escrita). Com o GITHUB_TOKEN padrão o PR
-# de release não dispara o CI e fica travado na proteção da main.
-# Sem o secret, o workflow só avisa e termina verde.
+# Contents e Pull requests em leitura e escrita). Com o GITHUB_TOKEN padrão, o CI
+# do PR de release fica esperando alguém aprovar a execução à mão, e a tag criada
+# não dispara workflow nenhum. Sem o secret, o workflow só avisa e termina verde.
 on:
   push:
     branches: [main]
@@ -27,6 +29,9 @@ jobs:
     permissions:
       contents: write # criar a tag, a release e anexar o build
       pull-requests: write # abrir e atualizar o PR de release
+      id-token: write # assinar a atestação de proveniência (OIDC)
+      attestations: write # gravar a atestação
+      artifact-metadata: write # registrar o artefato atestado
     steps:
       - name: Conferir o token de release
         id: token
@@ -70,6 +75,12 @@ jobs:
           npm ci --ignore-scripts
           npm run build
           tar -czf "app-$TAG.tar.gz" -C dist .
+
+      - name: Atestar a proveniência (SLSA)
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: app-${{ steps.release.outputs.tag_name }}.tar.gz
 
       - name: Anexar o pacote à release
         if: steps.release.outputs.release_created == 'true'
