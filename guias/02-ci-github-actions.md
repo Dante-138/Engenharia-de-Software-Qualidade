@@ -7,11 +7,11 @@ Arquivo: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 Três jobs no `ci.yml`, todos exigidos pela proteção da `main` (o quarto check exigido é o
 `Texto do PR`, do `pr.yml`):
 
-| Job         | Roda                                                                          |
-| ----------- | ----------------------------------------------------------------------------- |
-| `Gate`      | dependency review, actionlint, lint, formato, tipos, unidade, build, artefato |
-| `Navegador` | Playwright no container oficial: fluxo, console, axe, regressão visual        |
-| `Mutacao`   | Stryker no núcleo                                                             |
+| Job         | Roda                                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| `Gate`      | dependency review, actionlint, zizmor, versões, lint, formato, tipos, unidade, build, artefato |
+| `Navegador` | Playwright no container oficial: fluxo, console, axe, regressão visual                         |
+| `Mutacao`   | Stryker no núcleo                                                                              |
 
 `Navegador` e `Mutacao` dependem do `Gate` (`needs: gate`): se o básico falhou, não gasta
 minuto com o resto.
@@ -46,10 +46,11 @@ anterior. Economiza minuto e evita resultado velho.
 `Navegador`, `Mutacao`). Renomear o job sem atualizar a proteção deixa todo PR esperando
 um check que nunca vai chegar. O script `tools/configurar-repo.sh` tem a lista.
 
-**Container do Playwright na versão do pacote.** O `Gate` publica a versão instalada do
-`@playwright/test` como saída, e o `Navegador` usa
-`mcr.microsoft.com/playwright:v<versão>-noble`. Quando o Dependabot atualiza o Playwright,
-o navegador do CI atualiza junto. Navegador e pacote fora de versão é erro clássico.
+**Container do Playwright fixado por digest e na versão do pacote.** O `Navegador` roda em
+`mcr.microsoft.com/playwright:v<versão>-noble@sha256:<digest>`. Navegador e pacote fora de
+versão é erro clássico, e o Dependabot atualiza só o pacote; por isso o `Gate` roda
+`npm run versoes`, que reprova o descompasso e diz como atualizar a imagem. A linha do
+`ci.yml` é a fonte única: o `npm run test:navegador:docker` lê a imagem dali.
 
 **Artefato por PR.** O build testado vai como artefato (`build-<commit>`), 14 dias. Quem
 revisa baixa e abre exatamente o que passou nos testes. Num app Android, é aqui que entra
@@ -58,7 +59,7 @@ o APK de depuração do PR.
 **Relatório só na falha.** O `Navegador` e o `Mutacao` guardam o relatório quando falham.
 Na regressão visual, o relatório traz a imagem nova e a diferença.
 
-**`dependency-review` e `actionlint` no Gate.** Ver guia 8.
+**`dependency-review`, `actionlint` e `zizmor` no Gate.** Ver guia 8.
 
 ## Workflows separados
 
@@ -66,7 +67,8 @@ Na regressão visual, o relatório traz a imagem nova e a diferença.
 | --------------- | --------------------------------------------------------------------------------------- |
 | `pr.yml`        | texto e destino do PR, também quando o PR é editado (check `Texto do PR`, exigido)      |
 | `codeql.yml`    | análise de segurança (JS/TS, os próprios workflows e C) no PR, na `main` e toda segunda |
-| `release.yml`   | versão, CHANGELOG, tag e release automáticos (guia 9)                                   |
+| `release.yml`   | versão, CHANGELOG, tag, release e atestação de proveniência (guia 9)                    |
+| `scorecard.yml` | nota do OpenSSF Scorecard, na `main` e toda segunda (guia 8)                            |
 | `receita-c.yml` | testes de C com sanitizers, só quando a receita muda                                    |
 
 ## Rodar no PC o que o CI roda
@@ -76,7 +78,8 @@ npm run check                    # commits, lint, formato, tipos, unidade, build
 npm run test:navegador           # navegador sem a regressão visual (Chromium local)
 npm run test:navegador:docker    # navegador completo, no mesmo container do CI
 npm run test:mutacao             # Stryker
-npm run lint:actions             # actionlint (Docker)
+npm run lint:actions             # actionlint e zizmor (Docker)
+npm run versoes                  # imagem do Playwright x pacote
 ```
 
 Os dois comandos com Docker precisam do Docker Desktop aberto.

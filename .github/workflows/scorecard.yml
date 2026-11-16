@@ -1,0 +1,42 @@
+name: Scorecard
+
+# OpenSSF Scorecard: nota de 0 a 10 em práticas de segurança do repositório
+# (proteção de branch, actions fixadas, permissões do token, revisão, SAST,
+# ferramenta de atualização de dependência, entre outras). Os achados vão para a
+# aba Security e o resultado é publicado em scorecard.dev.
+#
+# Com publish_results ligado, a action impõe um formato: sem env ou defaults no
+# topo ou no job, sem container, sem passos "run" e só as actions de checkout,
+# upload-artifact, upload-sarif e a do Scorecard. Não acrescente passos aqui.
+# https://github.com/ossf/scorecard-action
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 7 * * 1'
+  branch_protection_rule:
+
+permissions: read-all
+
+jobs:
+  analisar:
+    name: Scorecard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      security-events: write # publicar os achados na aba Security
+      id-token: write # publicar o resultado em scorecard.dev (OIDC)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          publish_results: true
+
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: scorecard.sarif
